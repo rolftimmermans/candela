@@ -1,13 +1,31 @@
+PATH
+  remote: .
+  specs:
+    candela (0.0.1)
+      ffi
+
 GEM
   remote: http://rubygems.org/
   specs:
+    diff-lcs (1.1.3)
     ffi (1.0.9)
-    gir_ffi (0.0.13)
-      ffi (~> 1.0.8)
+    rake (0.9.2)
+    rspec (2.7.0)
+      rspec-core (~> 2.7.0)
+      rspec-expectations (~> 2.7.0)
+      rspec-mocks (~> 2.7.0)
+    rspec-core (2.7.1)
+    rspec-expectations (2.7.0)
+      diff-lcs (~> 1.1.2)
+    rspec-mocks (2.7.0)
+    rspec-unit (1.1.0)
+      rspec (~> 2.1)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
-  ffi
-  gir_ffi
+  candela!
+  rake (~> 0.9)
+  rspec (~> 2.7)
+  rspec-unit

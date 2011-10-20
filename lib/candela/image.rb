@@ -1,9 +1,27 @@
+require "candela/image/attributes"
+require "candela/image/calculations"
+require "candela/image/transformations"
+
 module Candela
   class Image
+    include Attributes
+    include Calculations
+    include Transformations
+
     class << self
-      def from_file(path)
-        Candela.init
-        new Vips.vips_image_new_mode(File.expand_path(path), "r")
+      alias_method :from_pointer, :new
+      private :from_pointer
+
+      def open(path)
+        raise ImageNotFound, %Q(file "#{path}" not found) unless File.exists?(path)
+        pointer = Vips.vips_image_new_from_file(path)
+        raise ImageError if pointer.null?
+        from_pointer(pointer)
+      end
+
+      def new
+        pointer = Vips.vips_image_new
+        from_pointer(pointer)
       end
     end
 
@@ -11,24 +29,8 @@ module Candela
       @struct = Vips::Image.new(pointer)
     end
 
-    def height
-      Vips.vips_image_get_height(@struct)
-    end
-
-    def width
-      Vips.vips_image_get_width(@struct)
-    end
-
-    def bands
-      @struct[:bands]
-    end
-
-    def band_format
-      @struct[:band_fmt]
-    end
-
-    def pixel_size
-      bands * FFI.type_size(band_format)
+    def save(path)
+      Vips.vips_image_write(@struct, path)
     end
 
     def region(*dimensions)
@@ -37,8 +39,8 @@ module Candela
       end
     end
 
-    def to_ptr
-      @struct
+    def to_pointer
+      @struct.pointer
     end
   end
 end

@@ -5,7 +5,7 @@ module Candela
       @struct[:left], @struct[:top], @struct[:width], @struct[:height] = left, top, width, height
     end
 
-    def to_ptr
+    def to_pointer
       @struct.pointer
     end
   end

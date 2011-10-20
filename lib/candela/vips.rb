@@ -1,207 +1,66 @@
+require "ffi"
+
 module Candela
   module Vips
+    # For an API reference of libvips see:
+    # http://www.vips.ecs.soton.ac.uk/supported/current/doc/html/libvips/index.html
     extend FFI::Library
     ffi_lib "vips"
 
-    class GTypeInstance < FFI::Struct
-      layout :g_class, :pointer
-    end
+    # Suppress all warnings from vips.
+    ENV["IM_WARNING"] = "0"
 
-    class GObj < FFI::Struct
-      layout(
-        :g_type_instance, GTypeInstance,
-        :ref_count, :uint,
-        :qdata, :pointer
-      )
-    end
+    require "candela/vips/gobject"
+    require "candela/vips/enums"
+    require "candela/vips/image"
+    require "candela/vips/rect"
+    require "candela/vips/region"
+    require "candela/vips/interpolate"
 
-    class Obj < FFI::Struct
-      layout(
-        :parent_object, GObj,
-        :constructed, :int,
-
-        :argument_table, :pointer,
-        :nickname, :pointer,
-        :description, :pointer,
-
-        :preclose, :int,
-        :close, :int,
-        :postclose, :int
-      )
-    end
-
-    DemandStyle = enum(
-      :smalltile,
-      :fatstrip,
-      :thinstrip,
-      :any
-    )
-
-    ImageType = enum(
-      :none,
-      :setbuf,
-      :setbuf_foreign,
-      :openin,
-      :mmapin,
-      :mmapinrw,
-      :openout,
-      :partial
-    )
-
-    BandFormat = enum(
-      :notset, -1,
-      :uchar,
-      :char,
-      :ushort,
-      :short,
-      :uint,
-      :int,
-      :float,
-      :complex,
-      :double,
-      :dpcomplex,
-      :last
-    )
-
-    Coding = enum(
-      :none, 0,
-      :labq, 2,
-      :rad, 6
-    )
-
-    Interpretation = enum(
-      :multiband, 0,
-      :bw, 1,
-      :histogram, 10,
-      :fourier, 24,
-      :xyz, 12,
-      :lab, 13,
-      :cmyk, 15,
-      :labq, 16,
-      :rgb, 17,
-      :ucs, 18,
-      :lch, 19,
-      :labs, 21,
-      :srgb, 22,
-      :yxy, 23,
-      :rgb16, 25,
-      :grey16, 26
-    )
-
-    class Image < FFI::Struct
-      layout(
-        :parent_object, Obj,
-        :x_size, :int,
-        :y_size, :int,
-        :bands, :int,
-
-        :band_fmt, BandFormat,
-        :coding, Coding,
-        :type, Interpretation,
-
-        :x_res, :float,
-        :y_res, :float,
-
-        :x_offset, :int,
-        :y_offset, :int,
-
-        :length, :int,
-        :compression, :short,
-        :level, :short,
-        :bbits, :int,
-
-        :time, :pointer,
-
-        :hist, :string,
-        :filename, :string,
-        :data, :string,
-        :kill, :int,
-
-        :mode, :string,
-        :dtype, ImageType,
-        :fd, :int,
-        :baseaddr, :pointer,
-        :length, :size_t,
-        :magic, :uint32,
-
-        :start, :pointer,
-        :generate, :int,
-        :stop, :int,
-        :client1, :pointer,
-        :client2, :pointer,
-        :sslock, :pointer,
-        :regions, :pointer,
-        :dhint, DemandStyle,
-
-        :meta, :pointer,
-        :meta_traverse, :pointer,
-
-        :sizeof_header, :int,
-
-        :windows, :pointer,
-
-        :upstream, :pointer,
-        :downstream, :pointer,
-        :serial, :int,
-
-        :history_list, :pointer,
-
-        :progress_signal, :pointer,
-
-        :file_length, :int64,
-
-        :hint_set, :int,
-
-        :delete_on_close, :int,
-        :delete_on_close_filename, :string
-      )
-    end
-
-    class Rect < FFI::Struct
-      layout(
-        :left, :int,
-        :top, :int,
-        :width, :int,
-        :height, :int
-      )
-    end
-
-    RegionType = enum(
-      :none,
-      :buffer,
-      :other_region,
-      :other_image,
-      :window
-    )
-
-    class Region < FFI::Struct
-      layout(
-        :parent_object, Obj,
-        :image, :pointer,
-
-        :valid, Rect,
-        :region_type, RegionType,
-
-        :data, :pointer,
-
-        :bpl, :int,
-        :seq, :pointer,
-        :gthread, :pointer,
-        :window, :pointer,
-        :buffer, :pointer,
-        :invalid, :int
-      )
-    end
+    attach_function :g_object_new, [], :pointer
+    attach_function :g_object_unref, [:pointer], :void
 
     attach_function :vips_init, [:string], :int
     attach_function :vips_version, [:int], :int
 
+    attach_function :vips_error_buffer, [], :string
+    attach_function :vips_error_clear, [], :void
+
+    attach_function :vips_image_new, [], :pointer
     attach_function :vips_image_new_mode, [:string, :string], :pointer
+    attach_function :vips_image_new_from_file, [:string], :pointer
+    attach_function :vips_image_new_disc_temp, [:string], :pointer
+
+    attach_function :vips_image_write, [:pointer, :string], :int
 
     attach_function :vips_image_get_width, [:pointer], :int
     attach_function :vips_image_get_height, [:pointer], :int
+    attach_function :vips_image_get_bands, [:pointer], :int
+    attach_function :vips_image_ispartial, [:pointer], :int
 
     attach_function :vips_region_new, [:pointer], :pointer
     attach_function :vips_region_prepare, [:pointer, :pointer], :int
+
+    attach_function :im_invert, [:pointer, :pointer], :int
+    attach_function :im_zoom, [:pointer, :pointer, :int, :int], :int
+    attach_function :im_sharpen, [:pointer, :pointer, :int, :double, :double, :double, :double, :double], :int
+    attach_function :im_affinei, [:pointer, :pointer, Interpolate, :double, :double, :double, :double, :double, :double, :int, :int, :int, :int], :int
+    attach_function :im_icc_import_embedded, [:pointer, :pointer, Intent], :int
+
+    attach_function :vips_interpolate_nearest_static, [], :pointer
+    attach_function :vips_interpolate_new, [:string], :pointer
+
+    class << self
+      def init
+        Vips.vips_init(File.expand_path($0))
+      end
+
+      def lib_version
+        [Vips.vips_version(0), Vips.vips_version(1), Vips.vips_version(2)]
+      end
+    end
+
+    # TODO: Initialize lazily when images are opened.
+    init
   end
 end

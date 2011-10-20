@@ -16,6 +16,10 @@ module Candela
       data.unpack(pack_string)
     end
 
+    def to_hex
+      data.unpack("H#{2 * length}")
+    end
+
     private
 
     def pack_string
@@ -27,9 +31,9 @@ module Candela
       when :uint then "S"
       when :int then "s"
       when :float then "F"
-      when :complex then "FF"
+      when :complex then "F2"
       when :double then "D"
-      when :dpcomplex then "DD"
+      when :dpcomplex then "D2"
       end
       char * @bands
     end
